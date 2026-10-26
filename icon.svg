@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Vox">
+  <rect width="512" height="512" rx="112" fill="#f2eee6"/>
+  <rect x="204" y="112" width="104" height="184" rx="52" fill="#b4452a"/>
+  <path d="M152 244a104 104 0 0 0 208 0" fill="none" stroke="#b4452a" stroke-width="34" stroke-linecap="round"/>
+  <path d="M256 348v56" fill="none" stroke="#b4452a" stroke-width="34" stroke-linecap="round"/>
+</svg>

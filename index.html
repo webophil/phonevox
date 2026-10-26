@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vox - dicter, traduire, ecouter</title>
+<meta name="description" content="Dictez un texte, traduisez-le dans la langue de votre choix, ecoutez-le a voix haute.">
+<meta name="theme-color" content="#f2eee6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12151a" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Vox">
+<style>
+:root {
+  --paper: #f2eee6;
+  --surface: #fbf9f4;
+  --surface-2: #e9e3d8;
+  --ink: #191713;
+  --ink-2: #5d574c;
+  --line: #d9d2c4;
+  --accent: #b4452a;
+  --accent-2: #8f3520;
+  --accent-ink: #fff8f4;
+  --danger: #9b2f1a;
+  --shadow: 0 1px 2px rgba(25, 23, 19, .06), 0 12px 30px -18px rgba(25, 23, 19, .45);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+  --text: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12151a;
+    --surface: #1a1e25;
+    --surface-2: #232830;
+    --ink: #f1eee8;
+    --ink-2: #a09a8e;
+    --line: #2d333d;
+    --accent: #e5714f;
+    --accent-2: #f08a6b;
+    --accent-ink: #1a0f0a;
+    --danger: #ff9c82;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 16px 36px -18px rgba(0, 0, 0, .9);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 600px;
+  padding: max(14px, env(safe-area-inset-top)) 18px calc(36px + env(safe-area-inset-bottom));
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
+p { margin: 0; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip {
+  position: absolute;
+  left: 12px; top: -64px;
+  z-index: 30;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  text-decoration: none;
+}
+.skip:focus { top: 12px; }
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 2px 2px 20px;
+}
+
+.wordmark {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wordmark .name {
+  font-family: var(--display);
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+.wordmark .name em {
+  font-style: normal;
+  color: var(--accent);
+}
+.tagline {
+  font-size: .8rem;
+  color: var(--ink-2);
+  letter-spacing: .01em;
+}
+
+.install {
+  flex: none;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 600;
+  padding: 9px 15px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.install[hidden] { display: none; }
+.install:hover { opacity: .88; }
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.panel + .panel,
+.panel + .section,
+.section + .section,
+.section + .panel { margin-top: 18px; }
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.panel-head h2 {
+  font-size: 1.12rem;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.field label {
+  font-size: .78rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.field select {
+  max-width: 148px;
+  min-width: 0;
+  font: inherit;
+  font-size: .82rem;
+  padding: 7px 8px;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.mic-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0 16px;
+}
+
+.mic {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+  box-shadow: 0 16px 28px -14px rgba(180, 69, 42, .85);
+  transition: transform .16s ease, background .2s ease;
+  touch-action: manipulation;
+}
+.mic svg { width: 38px; height: 38px; }
+.mic:hover { transform: translateY(-1px); }
+.mic:active { transform: scale(.97); }
+
+.mic.is-live { background: var(--accent-2); }
+.mic.is-live::before,
+.mic.is-live::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  animation: ring 2.2s ease-out infinite;
+}
+.mic.is-live::after { animation-delay: 1.1s; }
+
+@keyframes ring {
+  0% { transform: scale(1); opacity: .65; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.mic-caption {
+  font-size: .84rem;
+  color: var(--ink-2);
+  text-align: center;
+  max-width: 62ch;
+  margin-inline: auto;
+}
+
+.interim {
+  min-height: 1.35em;
+  margin: 0 0 8px;
+  font-size: .9rem;
+  font-style: italic;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+textarea {
+  display: block;
+  width: 100%;
+  font: inherit;
+  line-height: 1.55;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 13px 14px;
+  overflow-wrap: anywhere;
+}
+
+#transcript {
+  min-height: 132px;
+  resize: vertical;
+  background: var(--surface-2);
+}
+#transcript::placeholder { color: var(--ink-2); }
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+}
+.counter {
+  font-size: .76rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ghost {
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 500;
+  padding: 7px 12px;
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ghost:hover { color: var(--ink); border-color: var(--ink-2); }
+.ghost.tiny { font-size: .74rem; padding: 6px 10px; }
+
+.section { padding: 0 2px; }
+
+.section-title {
+  font-size: 1.12rem;
+  margin-bottom: 3px;
+}
+
+.section-hint {
+  font-size: .8rem;
+  color: var(--ink-2);
+  margin-bottom: 14px;
+  max-width: 60ch;
+}
+
+.flag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
+}
+
+.flag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 11px 4px 9px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform .14s ease, border-color .14s ease;
+}
+.flag:hover { transform: translateY(-2px); border-color: var(--accent); }
+.flag:active { transform: scale(.97); }
+
+.flag svg {
+  width: 34px;
+  height: 23px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .16);
+}
+
+.flag-name {
+  max-width: 100%;
+  min-height: 2.3em;
+  font-size: .64rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.15;
+  color: var(--ink-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.empty {
+  padding: 26px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  font-size: .86rem;
+  color: var(--ink-2);
+  text-align: center;
+  max-width: 58ch;
+  margin-inline: auto;
+}
+.empty[hidden] { display: none; }
+
+.card {
+  min-width: 0;
+  padding: 14px 15px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  animation: rise .22s ease both;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+.card-head svg {
+  flex: none;
+  width: 26px;
+  height: 18px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .16);
+}
+.card-title {
+  min-width: 0;
+  font-size: .96rem;
+}
+.card-head .ghost { margin-left: auto; }
+
+.card-text {
+  padding: 4px 6px;
+  font-size: 1rem;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  resize: none;
+  overflow: hidden;
+}
+.card-text:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.card-text[dir="rtl"] { text-align: right; }
+
+.card-source {
+  margin: 2px 6px 10px;
+  max-width: 70ch;
+  font-size: .76rem;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-error {
+  margin: 4px 6px 10px;
+  max-width: 70ch;
+  font-size: .88rem;
+  color: var(--danger);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.speak {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--paper);
+  background: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.speak svg { width: 15px; height: 15px; }
+.speak.is-live { background: var(--accent); color: var(--accent-ink); }
+
+.note {
+  margin: 8px 6px 0;
+  max-width: 70ch;
+  font-size: .74rem;
+  color: var(--ink-2);
+}
+
+.skeleton {
+  display: block;
+  height: 13px;
+  margin: 7px 6px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.3s ease infinite;
+}
+.skeleton.short { width: 52%; }
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 20;
+  max-width: min(90vw, 420px);
+  padding: 11px 15px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: .84rem;
+  font-weight: 500;
+  box-shadow: 0 14px 30px -12px rgba(0, 0, 0, .55);
+  transform: translate(-50%, 150%);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform .26s ease, opacity .2s ease, visibility .26s;
+  pointer-events: none;
+}
+.toast.show {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+}
+
+footer.colophon {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: .74rem;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (min-width: 600px) {
+  .mic { width: 108px; height: 108px; }
+  .mic svg { width: 42px; height: 42px; }
+  .flag-grid { grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Aller au contenu</a>
+
+<header class="masthead">
+  <div class="wordmark">
+    <h1 class="name">V<em>o</em>x</h1>
+    <p class="tagline">dicter, traduire, ecouter</p>
+  </div>
+  <button id="installBtn" class="install" type="button" hidden>Installer</button>
+</header>
+
+<main id="main">
+  <section class="panel" aria-labelledby="dictee-title">
+    <div class="panel-head">
+      <h2 id="dictee-title">Dictee</h2>
+      <div class="field">
+        <label for="sourceLang">Langue</label>
+        <select id="sourceLang"></select>
+      </div>
+    </div>
+
+    <div class="mic-zone">
+      <button id="micBtn" class="mic" type="button" aria-pressed="false" aria-label="Demarrer la dictee">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor"/>
+          <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <p id="micCaption" class="mic-caption">Touchez le micro et parlez : le texte s'ecrit ici.</p>
+    </div>
+
+    <p id="interim" class="interim" aria-live="polite" aria-atomic="true"></p>
+
+    <label class="sr-only" for="transcript">Texte dicte</label>
+    <textarea id="transcript" rows="6" spellcheck="true" placeholder="Votre texte apparait ici. Vous pouvez le corriger avant de traduire."></textarea>
+
+    <div class="meta-row">
+      <span id="counter" class="counter">0 caractere</span>
+      <button id="clearBtn" class="ghost tiny" type="button">Effacer</button>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="cible-title">
+    <h2 id="cible-title" class="section-title">Traduire vers</h2>
+    <p class="section-hint">Touchez un drapeau : la traduction s'ajoute en carte, prete a etre lue.</p>
+    <div id="flagGrid" class="flag-grid"></div>
+  </section>
+
+  <section class="section" aria-labelledby="cards-title">
+    <h2 id="cards-title" class="sr-only">Traductions</h2>
+    <p id="empty" class="empty">Aucune traduction pour l'instant.</p>
+    <div id="cards" class="cards"></div>
+  </section>
+</main>
+
+<footer class="colophon">Vos textes restent sur cet appareil. La traduction et la dictee passent par le reseau.</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<p id="announce" class="sr-only" aria-live="polite"></p>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY = 'vox.state.v1';
+  var MAX_CARDS = 20;
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var synth = window.speechSynthesis || null;
+  var RTL = { ar: true, he: true, fa: true, ur: true };
+
+  var LANGS = [
+    { code: 'en', name: 'Anglais', locale: 'en-GB' },
+    { code: 'de', name: 'Allemand', locale: 'de-DE' },
+    { code: 'es', name: 'Espagnol', locale: 'es-ES' },
+    { code: 'it', name: 'Italien', locale: 'it-IT' },
+    { code: 'pt', name: 'Portugais', locale: 'pt-PT' },
+    { code: 'nl', name: 'Neerlandais', locale: 'nl-NL' },
+    { code: 'zh', name: 'Chinois', locale: 'zh-CN' },
+    { code: 'ar', name: 'Arabe', locale: 'ar-SA' },
+    { code: 'ja', name: 'Japonais', locale: 'ja-JP' },
+    { code: 'ru', name: 'Russe', locale: 'ru-RU' },
+    { code: 'ko', name: 'Coreen', locale: 'ko-KR' },
+    { code: 'tr', name: 'Turc', locale: 'tr-TR' },
+    { code: 'pl', name: 'Polonais', locale: 'pl-PL' },
+    { code: 'sv', name: 'Suedois', locale: 'sv-SE' },
+    { code: 'el', name: 'Grec', locale: 'el-GR' },
+    { code: 'hi', name: 'Hindi', locale: 'hi-IN' }
+  ];
+
+  var SOURCES = [{ code: 'fr', name: 'Francais', locale: 'fr-FR' }].concat(LANGS);
+
+  function byCode(code) {
+    for (var i = 0; i < LANGS.length; i++) {
+      if (LANGS[i].code === code) return LANGS[i];
+    }
+    return null;
+  }
+
+  /* ---------- drapeaux dessines en SVG (aucun caractere hors ASCII) ---------- */
+
+  function star(cx, cy, outer, inner, rot, fill) {
+    var pts = [];
+    for (var i = 0; i < 10; i++) {
+      var r = (i % 2 === 0) ? outer : inner;
+      var a = (Math.PI / 5) * i - Math.PI / 2 + rot;
+      pts.push((cx + r * Math.cos(a)).toFixed(2) + ',' + (cy + r * Math.sin(a)).toFixed(2));
+    }
+    return '<polygon points="' + pts.join(' ') + '" fill="' + fill + '"/>';
+  }
+
+  var FLAGS = {
+    fr: '<rect width="8" height="16" fill="#0055a4"/><rect x="8" width="8" height="16" fill="#fff"/><rect x="16" width="8" height="16" fill="#ef4135"/>',
+    de: '<rect width="24" height="5.34" fill="#111"/><rect y="5.34" width="24" height="5.33" fill="#dd0000"/><rect y="10.67" width="24" height="5.33" fill="#ffce00"/>',
+    es: '<rect width="24" height="16" fill="#aa151b"/><rect y="4" width="24" height="8" fill="#f1bf00"/>',
+    it: '<rect width="8" height="16" fill="#008c45"/><rect x="8" width="8" height="16" fill="#fff"/><rect x="16" width="8" height="16" fill="#cd212a"/>',
+    pt: '<rect width="10" height="16" fill="#046a38"/><rect x="10" width="14" height="16" fill="#da291c"/><circle cx="10" cy="8" r="4.1" fill="#ffe000"/><circle cx="10" cy="8" r="2.4" fill="#da291c"/>',
+    nl: '<rect width="24" height="5.33" fill="#ae1c28"/><rect y="5.33" width="24" height="5.34" fill="#fff"/><rect y="10.67" width="24" height="5.33" fill="#21468b"/>',
+    zh: '<rect width="24" height="16" fill="#de2910"/>' + star(5.2, 5.2, 3.8, 1.55, 0, '#ffde00') +
+        star(9.6, 2.4, 1.1, .45, .35, '#ffde00') + star(11.1, 4.4, 1.1, .45, .35, '#ffde00') +
+        star(10.6, 6.9, 1.1, .45, .35, '#ffde00') + star(8.2, 8.4, 1.1, .45, .35, '#ffde00'),
+    ar: '<rect width="24" height="16" fill="#006c35"/><rect x="4.5" y="6.2" width="15" height="1.5" rx=".4" fill="#fff"/><rect x="7" y="9.2" width="10" height="1.2" rx=".4" fill="#fff"/>',
+    ja: '<rect width="24" height="16" fill="#fff"/><circle cx="12" cy="8" r="4.5" fill="#bc002d"/>',
+    ru: '<rect width="24" height="5.33" fill="#fff"/><rect y="5.33" width="24" height="5.34" fill="#0039a6"/><rect y="10.67" width="24" height="5.33" fill="#d52b1e"/>',
+    ko: '<rect width="24" height="16" fill="#fff"/><path d="M7.6 8a4.4 4.4 0 0 1 8.8 0z" fill="#cd2e3a"/><path d="M16.4 8a4.4 4.4 0 0 1-8.8 0z" fill="#0047a0"/><circle cx="12" cy="8" r="4.4" fill="none" stroke="#e6e6e6" stroke-width=".6"/>',
+    tr: '<rect width="24" height="16" fill="#e30a17"/><circle cx="9.2" cy="8" r="3.6" fill="#fff"/><circle cx="10.6" cy="8" r="2.9" fill="#e30a17"/>' + star(14.6, 8, 1.7, .68, 0, '#fff'),
+    pl: '<rect width="24" height="8" fill="#fff"/><rect y="8" width="24" height="8" fill="#dc143c"/>',
+    sv: '<rect width="24" height="16" fill="#006aa7"/><rect x="6.6" width="2.8" height="16" fill="#fecc00"/><rect y="6.6" width="24" height="2.8" fill="#fecc00"/>',
+    el: '<rect width="24" height="16" fill="#0d5eaf"/><rect y="1.78" width="24" height="1.78" fill="#fff"/><rect y="5.33" width="24" height="1.78" fill="#fff"/><rect y="8.89" width="24" height="1.78" fill="#fff"/><rect y="12.44" width="24" height="1.78" fill="#fff"/><rect x="0" y="0" width="8.9" height="8.9" fill="#0d5eaf"/><rect x="3.6" y="0" width="1.8" height="8.9" fill="#fff"/><rect x="0" y="3.55" width="8.9" height="1.8" fill="#fff"/>',
+    hi: '<rect width="24" height="5.33" fill="#ff9933"/><rect y="5.33" width="24" height="5.34" fill="#fff"/><rect y="10.67" width="24" height="5.33" fill="#138808"/><circle cx="12" cy="8" r="1.9" fill="none" stroke="#000080" stroke-width=".7"/>',
+    en: '<rect width="24" height="16" fill="#012169"/><path d="M0 0 24 16M24 0 0 16" stroke="#fff" stroke-width="3.2"/><path d="M0 0 24 16M24 0 0 16" stroke="#c8102e" stroke-width="1.5"/><path d="M12 0V16M0 8H24" stroke="#fff" stroke-width="5.4"/><path d="M12 0V16M0 8H24" stroke="#c8102e" stroke-width="3.2"/>'
+  };
+
+  function flagSvg(code) {
+    var inner = FLAGS[code];
+    if (!inner) return '';
+    return '<svg viewBox="0 0 24 16" aria-hidden="true" focusable="false" preserveAspectRatio="none">' + inner + '</svg>';
+  }
+
+  /* ---------- references DOM ---------- */
+
+  var ta = document.getElementById('transcript');
+  var interim = document.getElementById('interim');
+  var micBtn = document.getElementById('micBtn');
+  var micCaption = document.getElementById('micCaption');
+  var counter = document.getElementById('counter');
+  var clearBtn = document.getElementById('clearBtn');
+  var flagGrid = document.getElementById('flagGrid');
+  var cardsEl = document.getElementById('cards');
+  var emptyEl = document.getElementById('empty');
+  var toastEl = document.getElementById('toast');
+  var announceEl = document.getElementById('announce');
+  var sourceSel = document.getElementById('sourceLang');
+  var installBtn = document.getElementById('installBtn');
+
+  var cards = [];
+  var rec = null;
+  var wantListen = false;
+  var restarts = 0;
+  var speakingId = null;
+  var voices = [];
+  var toastTimer = 0;
+  var deferredPrompt = null;
+  var saveTimer = 0;
+
+  function uid() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toastEl.classList.remove('show');
+    }, 3600);
+  }
+
+  function announce(msg) {
+    announceEl.textContent = '';
+    setTimeout(function () { announceEl.textContent = msg; }, 80);
+  }
+
+  /* ---------- persistance ---------- */
+
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      try {
+        localStorage.setItem(KEY, JSON.stringify({
+          v: 1,
+          transcript: ta.value,
+          source: sourceSel.value,
+          cards: cards
+        }));
+      } catch (e) {
+        /* stockage plein ou bloque : on continue sans persistance */
+      }
+    }, 140);
+  }
+
+  function load() {
+    var data = null;
+    try {
+      data = JSON.parse(localStorage.getItem(KEY) || 'null');
+    } catch (e) {
+      data = null;
+    }
+    if (!data || typeof data !== 'object') return false;
+
+    if (typeof data.transcript === 'string') ta.value = data.transcript;
+    if (typeof data.source === 'string') {
+      for (var i = 0; i < sourceSel.options.length; i++) {
+        if (sourceSel.options[i].value === data.source) {
+          sourceSel.value = data.source;
+          break;
+        }
+      }
+    }
+    if (Array.isArray(data.cards)) {
+      cards = data.cards.filter(function (c) {
+        return c && typeof c.code === 'string' && byCode(c.code);
+      }).slice(0, MAX_CARDS).map(function (c) {
+        if (c.state === 'loading') {
+          c.state = 'error';
+          c.error = 'Traduction interrompue. Touchez Reessayer.';
+        }
+        return c;
+      });
+    }
+    return true;
+  }
+
+  /* ---------- dictee ---------- */
+
+  function setLive(on) {
+    micBtn.classList.toggle('is-live', on);
+    micBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    micBtn.setAttribute('aria-label', on ? 'Arreter la dictee' : 'Demarrer la dictee');
+    micCaption.textContent = on
+      ? 'Ecoute en cours. Parlez, puis touchez pour arreter.'
+      : "Touchez le micro et parlez : le texte s'ecrit ici.";
+  }
+
+  function updateCounter() {
+    var n = ta.value.trim().length;
+    counter.textContent = n === 0 ? '0 caractere' : n + (n > 1 ? ' caracteres' : ' caractere');
+  }
+
+  function appendText(txt) {
+    var current = ta.value.replace(/\s+$/, '');
+    ta.value = current ? current + ' ' + txt : txt;
+    updateCounter();
+    save();
+  }
+
+  function buildRec() {
+    rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    rec.lang = sourceSel.value;
+
+    rec.onstart = function () {
+      restarts = 0;
+      setLive(true);
+    };
+
+    rec.onresult = function (event) {
+      var pending = '';
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        var result = event.results[i];
+        if (result.isFinal) {
+          var chunk = (result[0] && result[0].transcript || '').trim();
+          if (chunk) appendText(chunk);
+        } else {
+          pending += result[0].transcript;
+        }
+      }
+      interim.textContent = pending;
+    };
+
+    rec.onerror = function (event) {
+      var err = event.error;
+      if (err === 'no-speech' || err === 'aborted') return;
+      wantListen = false;
+      setLive(false);
+      if (err === 'not-allowed' || err === 'service-not-allowed') {
+        toast('Micro refuse. Autorisez le microphone pour ce site, puis reessayez.');
+      } else if (err === 'network') {
+        toast('La dictee a besoin d\'une connexion internet.');
+      } else if (err === 'language-not-supported') {
+        toast('Cette langue n\'est pas disponible pour la dictee sur cet appareil.');
+      }
+    };
+
+    rec.onend = function () {
+      interim.textContent = '';
+      if (wantListen && restarts < 50) {
+        restarts++;
+        setTimeout(function () {
+          if (!wantListen) return;
+          try {
+            rec.start();
+          } catch (e) {
+            if (!e || e.name !== 'InvalidStateError') {
+              wantListen = false;
+              setLive(false);
+            }
+          }
+        }, 320);
+      } else {
+        wantListen = false;
+        setLive(false);
+      }
+    };
+  }
+
+  function startMic() {
+    if (!SR) {
+      toast('La dictee vocale n\'est pas prise en charge par ce navigateur. Le texte reste saisissable au clavier.');
+      return;
+    }
+    if (!rec) buildRec();
+    rec.lang = sourceSel.value;
+    wantListen = true;
+    restarts = 0;
+    interim.textContent = '';
+    try {
+      rec.start();
+    } catch (e) {
+      /* deja actif */
+    }
+    setLive(true);
+  }
+
+  function stopMic() {
+    wantListen = false;
+    interim.textContent = '';
+    if (rec) {
+      try { rec.stop(); } catch (e) { /* rien a arreter */ }
+    }
+    setLive(false);
+  }
+
+  /* ---------- traduction ---------- */
+
+  function splitChunks(text, limit) {
+    var parts = text.split(/([.!?\u2026\u3002\uff01\uff1f\n]+)/);
+    var out = [];
+    var current = '';
+    for (var i = 0; i < parts.length; i++) {
+      var seg = parts[i];
+      if (current && current.length + seg.length > limit) {
+        out.push(current);
+        current = '';
+      }
+      current += seg;
+      while (current.length > limit) {
+        out.push(current.slice(0, limit));
+        current = current.slice(limit);
+      }
+    }
+    if (current) out.push(current);
+    return out.map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  function myMemoryCode(code) {
+    if (code === 'zh') return 'zh-CN';
+    if (code === 'pt') return 'pt-PT';
+    return code;
+  }
+
+  function viaGoogle(query, from, to) {
+    var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t' +
+      '&sl=' + encodeURIComponent(from) + '&tl=' + encodeURIComponent(to) +
+      '&q=' + encodeURIComponent(query);
+    return fetch(url, { mode: 'cors', credentials: 'omit' }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      if (!Array.isArray(data) || !Array.isArray(data[0])) throw new Error('format');
+      var out = data[0].map(function (seg) {
+        return (seg && seg[0]) ? seg[0] : '';
+      }).join('').trim();
+      if (!out) throw new Error('vide');
+      return out;
+    });
+  }
+
+  function viaMyMemory(query, from, to) {
+    var url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(query) +
+      '&langpair=' + encodeURIComponent(myMemoryCode(from) + '|' + myMemoryCode(to));
+    return fetch(url, { mode: 'cors', credentials: 'omit' }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      var t = data && data.responseData && data.responseData.translatedText;
+      if (!t || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(t)) throw new Error('indisponible');
+      return String(t).trim();
+    });
+  }
+
+  function translateOne(query, from, to) {
+    return viaGoogle(query, from, to).catch(function () {
+      if (query.length > 450) throw new Error('reseau');
+      return viaMyMemory(query, from, to);
+    }).catch(function () {
+      throw new Error('Traduction indisponible : verifiez la connexion, puis reessayez.');
+    });
+  }
+
+  function translateAll(text, from, to) {
+    if (from === to) return Promise.resolve(text);
+    var chunks = splitChunks(text, 1100);
+    var out = [];
+    var chain = Promise.resolve();
+    chunks.forEach(function (chunk) {
+      chain = chain.then(function () {
+        return translateOne(chunk, from, to).then(function (res) {
+          out.push(res);
+        });
+      });
+    });
+    return chain.then(function () {
+      return out.join(' ').trim();
+    });
+  }
+
+  /* ---------- cartes ---------- */
+
+  function focusCard(id) {
+    var node = cardsEl.querySelector('[data-id="' + id + '"]');
+    if (node && node.scrollIntoView) {
+      node.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  function addCard(lang) {
+    var text = ta.value.trim();
+    if (!text) {
+      toast('Dictez ou ecrivez d\'abord un texte.');
+      ta.focus();
+      return;
+    }
+    var from = sourceSel.value.split('-')[0];
+    var existing = null;
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i].code === lang.code && cards[i].source === text) existing = cards[i];
+    }
+
+    var card;
+    if (existing) {
+      card = existing;
+      card.state = 'loading';
+      card.error = '';
+      cards = [card].concat(cards.filter(function (c) { return c !== card; }));
+    } else {
+      card = {
+        id: uid(),
+        code: lang.code,
+        name: lang.name,
+        locale: lang.locale,
+        source: text,
+        text: '',
+        state: 'loading',
+        error: '',
+        at: Date.now()
+      };
+      cards = [card].concat(cards).slice(0, MAX_CARDS);
+    }
+
+    render();
+    save();
+    announce('Traduction en ' + lang.name + ' en cours.');
+
+    translateAll(text, from, lang.code).then(function (out) {
+      card.text = out;
+      card.state = 'ready';
+      card.error = '';
+      refreshCard(card);
+      save();
+      focusCard(card.id);
+      announce('Traduction en ' + lang.name + ' prete.');
+    }).catch(function (err) {
+      card.state = 'error';
+      card.error = (err && err.message) || 'Traduction impossible.';
+      refreshCard(card);
+      save();
+      announce('Traduction en ' + lang.name + ' impossible.');
+    });
+  }
+
+  function retryCard(card) {
+    var from = sourceSel.value.split('-')[0];
+    card.state = 'loading';
+    card.error = '';
+    render();
+    translateAll(card.source, from, card.code).then(function (out) {
+      card.text = out;
+      card.state = 'ready';
+      card.error = '';
+      refreshCard(card);
+      save();
+    }).catch(function (err) {
+      card.state = 'error';
+      card.error = (err && err.message) || 'Traduction impossible.';
+      refreshCard(card);
+      save();
+    });
+  }
+
+  function autoGrow(node) {
+    node.style.height = 'auto';
+    node.style.height = Math.min(node.scrollHeight, 460) + 'px';
+  }
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (typeof text === 'string') node.textContent = text;
+    return node;
+  }
+
+  function buildCard(card) {
+    var art = el('article', 'card');
+    art.dataset.id = card.id;
+
+    var head = el('div', 'card-head');
+    var flagWrap = el('span');
+    flagWrap.innerHTML = flagSvg(card.code);
+    var title = el('h3', 'card-title', card.name);
+    var remove = el('button', 'ghost tiny', 'Supprimer');
+    remove.type = 'button';
+    remove.setAttribute('aria-label', 'Supprimer la traduction en ' + card.name);
+    remove.addEventListener('click', function () {
+      if (speakingId === card.id) stopSpeaking();
+      cards = cards.filter(function (c) { return c !== card; });
+      render();
+      save();
+      announce('Traduction en ' + card.name + ' supprimee.');
+    });
+    head.appendChild(flagWrap);
+    head.appendChild(title);
+    head.appendChild(remove);
+    art.appendChild(head);
+
+    if (card.state === 'loading') {
+      var body = el('div');
+      body.appendChild(el('span', 'skeleton'));
+      body.appendChild(el('span', 'skeleton short'));
+      art.appendChild(body);
+      return art;
+    }
+
+    if (card.state === 'error') {
+      art.appendChild(el('p', 'card-error', card.error || 'Traduction impossible.'));
+      var actions = el('div', 'card-actions');
+      var retry = el('button', 'ghost', 'Reessayer');
+      retry.type = 'button';
+      retry.addEventListener('click', function () { retryCard(card); });
+      actions.appendChild(retry);
+      art.appendChild(actions);
+      return art;
+    }
+
+    var txt = el('textarea', 'card-text');
+    txt.rows = 3;
+    txt.value = card.text;
+    txt.lang = card.code;
+    txt.spellcheck = false;
+    txt.setAttribute('aria-label', 'Traduction en ' + card.name);
+    if (RTL[card.code]) txt.dir = 'rtl';
+    txt.addEventListener('input', function () {
+      card.text = txt.value;
+      autoGrow(txt);
+      save();
+    });
+
+    var source = el('p', 'card-source', 'Depuis : ' + card.source);
+
+    var row = el('div', 'card-actions');
+
+    var speakBtn = el('button', 'speak');
+    speakBtn.type = 'button';
+    speakBtn.dataset.speak = '1';
+    speakBtn.setAttribute('aria-pressed', 'false');
+    speakBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+      '<path d="M4 9.5v5h3l4.5 3.5v-12L7 9.5H4Z" fill="currentColor"/>' +
+      '<path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>' +
+      '</svg><span class="speak-label">Lire</span>';
+    speakBtn.addEventListener('click', function () { toggleSpeak(card); });
+
+    var copyBtn = el('button', 'ghost tiny', 'Copier');
+    copyBtn.type = 'button';
+    copyBtn.addEventListener('click', function () {
+      copyText(card, txt);
+    });
+
+    row.appendChild(speakBtn);
+    row.appendChild(copyBtn);
+    art.appendChild(txt);
+    art.appendChild(source);
+    art.appendChild(row);
+
+    if (synth && voices.length > 0 && !findVoice(card.locale)) {
+      art.appendChild(el('p', 'note', 'Voix ' + card.name + ' non installee sur cet appareil : la lecture peut etre approximative.'));
+    }
+
+    requestAnimationFrame(function () { autoGrow(txt); });
+    return art;
+  }
+
+  function copyText(card, txt) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(card.text).then(function () {
+        toast('Texte copie.');
+      }, function () {
+        selectIn(txt);
+      });
+    } else {
+      selectIn(txt);
+    }
+  }
+
+  function selectIn(txt) {
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(txt);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      toast('Texte selectionne : copiez-le manuellement.');
+    } catch (e) {
+      toast('Copie impossible ici.');
+    }
+  }
+
+  function render() {
+    cardsEl.textContent = '';
+    emptyEl.hidden = cards.length > 0;
+    cards.forEach(function (card) {
+      cardsEl.appendChild(buildCard(card));
+    });
+    var fields = cardsEl.querySelectorAll('.card-text');
+    for (var i = 0; i < fields.length; i++) autoGrow(fields[i]);
+    paintSpeaking();
+  }
+
+  /* remplace une seule carte, pour ne pas voler le focus des autres */
+  function refreshCard(card) {
+    var node = cardsEl.querySelector('[data-id="' + card.id + '"]');
+    var fresh = buildCard(card);
+    if (node && node.parentNode) node.parentNode.replaceChild(fresh, node);
+    else cardsEl.insertBefore(fresh, cardsEl.firstChild);
+    var field = fresh.querySelector('.card-text');
+    if (field) autoGrow(field);
+    emptyEl.hidden = cards.length > 0;
+    paintSpeaking();
+  }
+
+  /* ---------- lecture a voix haute ---------- */
+
+  function refreshVoices() {
+    try {
+      voices = synth ? synth.getVoices() : [];
+    } catch (e) {
+      voices = [];
+    }
+  }
+
+  function findVoice(locale) {
+    var want = String(locale || '').toLowerCase().replace('_', '-');
+    var two = want.slice(0, 2);
+    var norm = function (v) { return String(v.lang || '').toLowerCase().replace('_', '-'); };
+    var i;
+    for (i = 0; i < voices.length; i++) {
+      if (norm(voices[i]) === want) return voices[i];
+    }
+    var same = [];
+    for (i = 0; i < voices.length; i++) {
+      if (norm(voices[i]).slice(0, 2) === two) same.push(voices[i]);
+    }
+    for (i = 0; i < same.length; i++) {
+      if (!same[i].localService) return same[i];
+    }
+    return same[0] || null;
+  }
+
+  function paintSpeaking() {
+    var nodes = cardsEl.querySelectorAll('.card');
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      var on = node.dataset.id === speakingId;
+      var btn = node.querySelector('[data-speak]');
+      if (!btn) continue;
+      btn.classList.toggle('is-live', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      var label = btn.querySelector('.speak-label');
+      if (label) label.textContent = on ? 'Arreter' : 'Lire';
+    }
+  }
+
+  function stopSpeaking() {
+    speakingId = null;
+    if (synth) {
+      try { synth.cancel(); } catch (e) { /* rien en cours */ }
+    }
+    paintSpeaking();
+  }
+
+  function speakQueue(card, chunks, index) {
+    if (speakingId !== card.id) return;
+    if (index >= chunks.length) {
+      speakingId = null;
+      paintSpeaking();
+      return;
+    }
+    var utter = new SpeechSynthesisUtterance(chunks[index]);
+    utter.lang = card.locale;
+    var voice = findVoice(card.locale);
+    if (voice) utter.voice = voice;
+    utter.rate = 1;
+    utter.pitch = 1;
+    utter.onend = function () { speakQueue(card, chunks, index + 1); };
+    utter.onerror = function () {
+      if (speakingId === card.id) {
+        speakingId = null;
+        paintSpeaking();
+      }
+    };
+    try {
+      synth.speak(utter);
+    } catch (e) {
+      speakingId = null;
+      paintSpeaking();
+      toast('Lecture vocale indisponible sur cet appareil.');
+    }
+  }
+
+  function toggleSpeak(card) {
+    if (!synth) {
+      toast('La lecture vocale n\'est pas prise en charge par ce navigateur.');
+      return;
+    }
+    if (speakingId === card.id) {
+      stopSpeaking();
+      return;
+    }
+    var text = (card.text || '').trim();
+    if (!text) return;
+    stopSpeaking();
+    speakingId = card.id;
+    paintSpeaking();
+    speakQueue(card, splitChunks(text, 190), 0);
+    announce('Lecture en ' + card.name + '.');
+  }
+
+  if (synth) {
+    refreshVoices();
+    if (typeof synth.addEventListener === 'function') {
+      synth.addEventListener('voiceschanged', function () {
+        refreshVoices();
+        if (cards.length) render();
+      });
+    }
+    setTimeout(function () {
+      if (!voices.length) {
+        refreshVoices();
+        if (cards.length && cards.some(function (c) { return c.state === 'ready'; })) render();
+      }
+    }, 700);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible' && synth.paused && speakingId) {
+        try { synth.resume(); } catch (e) { /* ignore */ }
+      }
+    });
+  }
+
+  /* ---------- installation ---------- */
+
+  function isStandalone() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      window.navigator.standalone === true;
+  }
+
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  window.addEventListener('beforeinstallprompt', function (event) {
+    event.preventDefault();
+    deferredPrompt = event;
+    installBtn.hidden = false;
+  });
+
+  window.addEventListener('appinstalled', function () {
+    deferredPrompt = null;
+    installBtn.hidden = true;
+    toast('Vox est installe.');
+  });
+
+  installBtn.addEventListener('click', function () {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function () {
+        deferredPrompt = null;
+        installBtn.hidden = true;
+      }, function () {
+        deferredPrompt = null;
+        installBtn.hidden = true;
+      });
+      return;
+    }
+    toast(isIOS()
+      ? 'Partagez cette page, puis choisissez "Sur l\'ecran d\'accueil".'
+      : 'Menu du navigateur, puis "Installer l\'application".');
+  });
+
+  /* ---------- branchements ---------- */
+
+  micBtn.addEventListener('click', function () {
+    if (wantListen) stopMic();
+    else startMic();
+  });
+
+  sourceSel.addEventListener('change', function () {
+    save();
+    if (wantListen) {
+      stopMic();
+      setTimeout(startMic, 260);
+    }
+  });
+
+  ta.addEventListener('input', function () {
+    updateCounter();
+    save();
+  });
+
+  clearBtn.addEventListener('click', function () {
+    ta.value = '';
+    interim.textContent = '';
+    updateCounter();
+    save();
+    ta.focus();
+    announce('Texte efface.');
+  });
+
+  LANGS.forEach(function (lang) {
+    var btn = el('button', 'flag');
+    btn.type = 'button';
+    btn.dataset.code = lang.code;
+    btn.setAttribute('aria-label', 'Traduire en ' + lang.name);
+    btn.innerHTML = flagSvg(lang.code) + '<span class="flag-name">' + lang.name + '</span>';
+    btn.addEventListener('click', function () { addCard(lang); });
+    flagGrid.appendChild(btn);
+  });
+
+  SOURCES.forEach(function (lang) {
+    var opt = document.createElement('option');
+    opt.value = lang.locale;
+    opt.textContent = lang.name;
+    sourceSel.appendChild(opt);
+  });
+  sourceSel.value = 'fr-FR';
+
+  var restored = load();
+  if (!restored || (!ta.value && cards.length === 0)) {
+    ta.value = "Bonjour, je dicte mon texte ici. Ensuite je touche un drapeau pour voir la traduction, et Lire pour l'ecouter.";
+    cards = [{
+      id: uid(),
+      code: 'de',
+      name: 'Allemand',
+      locale: 'de-DE',
+      source: ta.value,
+      text: 'Hallo, ich diktiere meinen Text hier. Danach tippe ich auf eine Flagge, um die Ubersetzung zu sehen, und auf Vorlesen, um sie zu horen.',
+      state: 'ready',
+      error: '',
+      at: Date.now()
+    }];
+    save();
+  }
+
+  updateCounter();
+  render();
+
+  if (!SR) {
+    micCaption.textContent = 'Ce navigateur ne gere pas la dictee vocale : le texte se saisit au clavier, la traduction et la lecture restent disponibles.';
+  }
+  if (isStandalone()) installBtn.hidden = true;
+  else if (isIOS()) installBtn.hidden = false;
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {
+        /* hors ligne indisponible, l'app fonctionne quand meme en ligne */
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

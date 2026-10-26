@@ -1,0 +1,41 @@
+services:
+  vox:
+    build: .
+    image: vox:latest
+    container_name: vox
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8080"
+    # Pour tester en local sans TLS : http://localhost:8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # Reverse proxy TLS automatique. Commentez ce bloc si vous avez deja
+  # un Caddy, un nginx ou un Traefik sur la machine.
+  #
+  # caddy:
+  #   image: caddy:2-alpine
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - vox
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+
+# volumes:
+#   caddy_data:
+#   caddy_config:
