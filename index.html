@@ -605,7 +605,7 @@ footer.colophon {
   </section>
 </main>
 
-<footer class="colophon">Vos textes restent sur cet appareil. La traduction et la dictée passent par le réseau.</footer>
+<footer class="colophon">Vos textes restent sur cet appareil. La traduction et la dictée passent par le réseau.<br><span>Version 1.0.2</span></footer>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <p id="announce" class="sr-only" aria-live="polite"></p>
@@ -810,7 +810,11 @@ footer.colophon {
 
   function buildRec() {
     rec = new SR();
-    rec.continuous = true;
+    // Android continuous mode can promote cumulative partial hypotheses to
+    // final results with new indexes. Use one utterance per run instead;
+    // onend keeps listening by starting the next run after a pause.
+    rec.continuous = !(/Android/i.test(navigator.userAgent || '') ||
+      (navigator.userAgentData && navigator.userAgentData.platform === 'Android'));
     rec.interimResults = true;
     rec.maxAlternatives = 1;
     rec.lang = sourceSel.value;
