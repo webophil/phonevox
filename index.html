@@ -815,7 +815,11 @@ footer.colophon {
     rec.maxAlternatives = 1;
     rec.lang = sourceSel.value;
 
+    // Result indexes belong to one recognition run, not to the whole dictation.
+    var committedResults = Object.create(null);
+
     rec.onstart = function () {
+      committedResults = Object.create(null);
       restarts = 0;
       setLive(true);
     };
@@ -825,6 +829,10 @@ footer.colophon {
       for (var i = event.resultIndex; i < event.results.length; i++) {
         var result = event.results[i];
         if (result.isFinal) {
+          // Some engines replay final results when resultIndex moves backwards.
+          // Deduplicate by index, never by text: spoken repetitions are valid.
+          if (committedResults[i]) continue;
+          committedResults[i] = true;
           var chunk = (result[0] && result[0].transcript || '').trim();
           if (chunk) appendText(chunk);
         } else {
