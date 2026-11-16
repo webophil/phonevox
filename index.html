@@ -16,7 +16,12 @@
 <meta name="apple-mobile-web-app-title" content="Vox">
 <style>
 :root {
-  --paper: #f2eee6;
+  --paper: #f5f0e9;
+  --shine: #fffdf9;
+  --mic-top: #c4583c;
+  --mic-base: #8d2d1a;
+  --mic-light: rgba(255, 225, 204, .34);
+  --mic-shadow: rgba(128, 41, 22, .34);
   --surface: #fbf9f4;
   --surface-2: #e9e3d8;
   --ink: #191713;
@@ -27,7 +32,7 @@
   --accent-ink: #fff8f4;
   --danger: #9b2f1a;
   --shadow: 0 1px 2px rgba(25, 23, 19, .06), 0 12px 30px -18px rgba(25, 23, 19, .45);
-  --radius: 18px;
+  --radius: 16px;
   --radius-sm: 12px;
   --display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
   --text: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -35,7 +40,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #12151a;
+    --paper: #171518;
+    --shine: #2b272c;
+    --mic-top: #ff9b76;
+    --mic-base: #e16e4d;
+    --mic-light: rgba(255, 238, 221, .46);
+    --mic-shadow: rgba(0, 0, 0, .46);
     --surface: #1a1e25;
     --surface-2: #232830;
     --ink: #f1eee8;
@@ -53,12 +63,14 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  color-scheme: light dark;
+  background: var(--paper);
   overflow-x: hidden;
 }
 
 body {
   margin: 0 auto;
-  max-width: 600px;
+  max-width: 680px;
   padding: max(14px, env(safe-area-inset-top)) 18px calc(36px + env(safe-area-inset-bottom));
   background: var(--paper);
   color: var(--ink);
@@ -111,7 +123,10 @@ p { margin: 0; }
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  padding: 2px 2px 20px;
+  align-items: center;
+  padding: 8px 2px 18px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
 
 .wordmark {
@@ -121,9 +136,9 @@ p { margin: 0; }
 }
 .wordmark .name {
   font-family: var(--display);
-  font-size: 2rem;
+  font-size: clamp(2.1rem, 6vw, 2.75rem);
   line-height: 1;
-  letter-spacing: -.045em;
+  letter-spacing: -.035em;
 }
 .wordmark .name em {
   font-style: normal;
@@ -154,9 +169,8 @@ p { margin: 0; }
 .panel {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  padding: 18px;
+  background: linear-gradient(162deg, var(--shine), var(--surface) 60%);
+  padding: clamp(15px, 4vw, 24px);
 }
 
 .panel + .panel,
@@ -204,7 +218,7 @@ p { margin: 0; }
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 20px 0 16px;
+  padding: 16px 0 14px;
 }
 
 .mic {
@@ -215,10 +229,11 @@ p { margin: 0; }
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: var(--accent);
+  background: radial-gradient(ellipse at 32% 15%, var(--mic-light), transparent 53%),
+    linear-gradient(155deg, var(--mic-top) 10%, var(--mic-base) 85%);
   color: var(--accent-ink);
   cursor: pointer;
-  box-shadow: 0 16px 28px -14px rgba(180, 69, 42, .85);
+  box-shadow: inset 0 1px 1px var(--mic-light), 0 12px 21px -8px var(--mic-shadow);
   transition: transform .16s ease, background .2s ease;
   touch-action: manipulation;
 }
@@ -226,7 +241,7 @@ p { margin: 0; }
 .mic:hover { transform: translateY(-1px); }
 .mic:active { transform: scale(.97); }
 
-.mic.is-live { background: var(--accent-2); }
+.mic.is-live { background: var(--mic-base); }
 .mic.is-live::before,
 .mic.is-live::after {
   content: "";
@@ -273,11 +288,13 @@ textarea {
 }
 
 #transcript {
-  min-height: 132px;
+  min-height: 128px;
+  caret-color: var(--accent);
   resize: vertical;
   background: var(--surface-2);
 }
-#transcript::placeholder { color: var(--ink-2); }
+#transcript::placeholder { color: var(--ink-2); opacity: 1; }
+::selection { background: var(--ink); color: var(--paper); }
 
 .meta-row {
   display: flex;
@@ -296,6 +313,7 @@ textarea {
   font: inherit;
   font-size: .8rem;
   font-weight: 500;
+  min-height: 44px;
   padding: 7px 12px;
   color: var(--ink-2);
   background: transparent;
@@ -333,12 +351,12 @@ textarea {
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding: 11px 4px 9px;
+  padding: 12px 4px 9px;
   font: inherit;
   color: var(--ink);
-  background: var(--surface);
+  background: linear-gradient(165deg, var(--shine), var(--surface));
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
   touch-action: manipulation;
   transition: transform .14s ease, border-color .14s ease;
@@ -389,7 +407,6 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   animation: rise .22s ease both;
 }
 
@@ -463,6 +480,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  min-height: 44px;
   padding: 9px 16px;
   font: inherit;
   font-size: .84rem;
