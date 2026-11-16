@@ -632,7 +632,6 @@ footer.colophon {
   'use strict';
 
   var KEY = 'vox.state.v1';
-  var MAX_CARDS = 20;
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var synth = window.speechSynthesis || null;
   var RTL = { ar: true, he: true, fa: true, ur: true };
@@ -790,7 +789,7 @@ footer.colophon {
     if (Array.isArray(data.cards)) {
       cards = data.cards.filter(function (c) {
         return c && typeof c.code === 'string' && byCode(c.code);
-      }).slice(0, MAX_CARDS).map(function (c) {
+      }).map(function (c) {
         if (c.state === 'loading') {
           c.state = 'error';
           c.error = 'Traduction interrompue. Touchez Reessayer.';
@@ -807,6 +806,7 @@ footer.colophon {
     cards = cards.filter(function (card) {
       return !(card.code === 'de' && card.source === demoSource && card.text === demoTranslation);
     });
+    cards = cards.slice(0, 1);
     if (hadDemoText || cards.length !== cardCount) save();
     return true;
   }
@@ -1036,37 +1036,26 @@ footer.colophon {
       return;
     }
     var from = sourceSel.value.split('-')[0];
-    var existing = null;
-    for (var i = 0; i < cards.length; i++) {
-      if (cards[i].code === lang.code && cards[i].source === text) existing = cards[i];
-    }
-
-    var card;
-    if (existing) {
-      card = existing;
-      card.state = 'loading';
-      card.error = '';
-      cards = [card].concat(cards.filter(function (c) { return c !== card; }));
-    } else {
-      card = {
-        id: uid(),
-        code: lang.code,
-        name: lang.name,
-        locale: lang.locale,
-        source: text,
-        text: '',
-        state: 'loading',
-        error: '',
-        at: Date.now()
-      };
-      cards = [card].concat(cards).slice(0, MAX_CARDS);
-    }
+    var card = {
+      id: uid(),
+      code: lang.code,
+      name: lang.name,
+      locale: lang.locale,
+      source: text,
+      text: '',
+      state: 'loading',
+      error: '',
+      at: Date.now()
+    };
+    if (speakingId) stopSpeaking();
+    cards = [card];
 
     render();
     save();
     announce('Traduction en ' + lang.name + ' en cours.');
 
     translateAll(text, from, lang.code).then(function (out) {
+      if (cards[0] !== card) return;
       card.text = out;
       card.state = 'ready';
       card.error = '';
@@ -1075,6 +1064,7 @@ footer.colophon {
       focusCard(card.id);
       announce('Traduction en ' + lang.name + ' prete.');
     }).catch(function (err) {
+      if (cards[0] !== card) return;
       card.state = 'error';
       card.error = (err && err.message) || 'Traduction impossible.';
       refreshCard(card);
@@ -1089,12 +1079,14 @@ footer.colophon {
     card.error = '';
     render();
     translateAll(card.source, from, card.code).then(function (out) {
+      if (cards[0] !== card) return;
       card.text = out;
       card.state = 'ready';
       card.error = '';
       refreshCard(card);
       save();
     }).catch(function (err) {
+      if (cards[0] !== card) return;
       card.state = 'error';
       card.error = (err && err.message) || 'Traduction impossible.';
       refreshCard(card);
