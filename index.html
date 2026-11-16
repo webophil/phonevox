@@ -16,7 +16,12 @@
 <meta name="apple-mobile-web-app-title" content="Vox">
 <style>
 :root {
-  --paper: #f2eee6;
+  --paper: #f5f0e9;
+  --shine: #fffdf9;
+  --mic-top: #c4583c;
+  --mic-base: #8d2d1a;
+  --mic-light: rgba(255, 225, 204, .34);
+  --mic-shadow: rgba(128, 41, 22, .34);
   --surface: #fbf9f4;
   --surface-2: #e9e3d8;
   --ink: #191713;
@@ -27,7 +32,7 @@
   --accent-ink: #fff8f4;
   --danger: #9b2f1a;
   --shadow: 0 1px 2px rgba(25, 23, 19, .06), 0 12px 30px -18px rgba(25, 23, 19, .45);
-  --radius: 18px;
+  --radius: 16px;
   --radius-sm: 12px;
   --display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
   --text: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -35,7 +40,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #12151a;
+    --paper: #171518;
+    --shine: #2b272c;
+    --mic-top: #ff9b76;
+    --mic-base: #e16e4d;
+    --mic-light: rgba(255, 238, 221, .46);
+    --mic-shadow: rgba(0, 0, 0, .46);
     --surface: #1a1e25;
     --surface-2: #232830;
     --ink: #f1eee8;
@@ -53,12 +63,14 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  color-scheme: light dark;
+  background: var(--paper);
   overflow-x: hidden;
 }
 
 body {
   margin: 0 auto;
-  max-width: 600px;
+  max-width: 680px;
   padding: max(14px, env(safe-area-inset-top)) 18px calc(36px + env(safe-area-inset-bottom));
   background: var(--paper);
   color: var(--ink);
@@ -111,7 +123,10 @@ p { margin: 0; }
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  padding: 2px 2px 20px;
+  align-items: center;
+  padding: 8px 2px 18px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
 
 .wordmark {
@@ -121,9 +136,9 @@ p { margin: 0; }
 }
 .wordmark .name {
   font-family: var(--display);
-  font-size: 2rem;
+  font-size: clamp(2.1rem, 6vw, 2.75rem);
   line-height: 1;
-  letter-spacing: -.045em;
+  letter-spacing: -.035em;
 }
 .wordmark .name em {
   font-style: normal;
@@ -154,9 +169,8 @@ p { margin: 0; }
 .panel {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  padding: 18px;
+  background: linear-gradient(162deg, var(--shine), var(--surface) 60%);
+  padding: clamp(15px, 4vw, 24px);
 }
 
 .panel + .panel,
@@ -204,7 +218,7 @@ p { margin: 0; }
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 20px 0 16px;
+  padding: 16px 0 14px;
 }
 
 .mic {
@@ -215,10 +229,11 @@ p { margin: 0; }
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: var(--accent);
+  background: radial-gradient(ellipse at 32% 15%, var(--mic-light), transparent 53%),
+    linear-gradient(155deg, var(--mic-top) 10%, var(--mic-base) 85%);
   color: var(--accent-ink);
   cursor: pointer;
-  box-shadow: 0 16px 28px -14px rgba(180, 69, 42, .85);
+  box-shadow: inset 0 1px 1px var(--mic-light), 0 12px 21px -8px var(--mic-shadow);
   transition: transform .16s ease, background .2s ease;
   touch-action: manipulation;
 }
@@ -226,7 +241,7 @@ p { margin: 0; }
 .mic:hover { transform: translateY(-1px); }
 .mic:active { transform: scale(.97); }
 
-.mic.is-live { background: var(--accent-2); }
+.mic.is-live { background: var(--mic-base); }
 .mic.is-live::before,
 .mic.is-live::after {
   content: "";
@@ -273,11 +288,25 @@ textarea {
 }
 
 #transcript {
-  min-height: 132px;
+  height: 9.25em;
+  min-height: 128px;
+  caret-color: var(--accent);
   resize: vertical;
   background: var(--surface-2);
 }
-#transcript::placeholder { color: var(--ink-2); }
+#transcript:placeholder-shown:not(:focus) {
+  padding-top: 3.1em;
+}
+#transcript::placeholder {
+  color: var(--ink-2);
+  opacity: 1;
+  text-align: center;
+}
+#transcript:focus::placeholder,
+.panel:has(.mic.is-live) #transcript::placeholder { opacity: 0; }
+.panel:has(.mic.is-live) #transcript { padding-top: 13px; }
+.mic-caption:empty { display: none; }
+::selection { background: var(--ink); color: var(--paper); }
 
 .meta-row {
   display: flex;
@@ -296,6 +325,7 @@ textarea {
   font: inherit;
   font-size: .8rem;
   font-weight: 500;
+  min-height: 44px;
   padding: 7px 12px;
   color: var(--ink-2);
   background: transparent;
@@ -333,12 +363,12 @@ textarea {
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding: 11px 4px 9px;
+  padding: 12px 4px 9px;
   font: inherit;
   color: var(--ink);
-  background: var(--surface);
+  background: linear-gradient(165deg, var(--shine), var(--surface));
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   cursor: pointer;
   touch-action: manipulation;
   transition: transform .14s ease, border-color .14s ease;
@@ -371,25 +401,12 @@ textarea {
   gap: 14px;
 }
 
-.empty {
-  padding: 26px 14px;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  font-size: .86rem;
-  color: var(--ink-2);
-  text-align: center;
-  max-width: 58ch;
-  margin-inline: auto;
-}
-.empty[hidden] { display: none; }
-
 .card {
   min-width: 0;
   padding: 14px 15px 12px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   animation: rise .22s ease both;
 }
 
@@ -463,6 +480,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  min-height: 44px;
   padding: 9px 16px;
   font: inherit;
   font-size: .84rem;
@@ -578,13 +596,13 @@ footer.colophon {
           <path d="M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
-      <p id="micCaption" class="mic-caption">Touchez le micro et parlez : le texte s'ecrit ici.</p>
+      <p id="micCaption" class="mic-caption"></p>
     </div>
 
     <p id="interim" class="interim" aria-live="polite" aria-atomic="true"></p>
 
     <label class="sr-only" for="transcript">Texte dicte</label>
-    <textarea id="transcript" rows="6" spellcheck="true" placeholder="Votre texte apparait ici. Vous pouvez le corriger avant de traduire."></textarea>
+    <textarea id="transcript" rows="6" spellcheck="true" placeholder="touchez le micro et parlez&#10;le texte s'écrit ici"></textarea>
 
     <div class="meta-row">
       <span id="counter" class="counter">0 caractere</span>
@@ -600,7 +618,6 @@ footer.colophon {
 
   <section class="section" aria-labelledby="cards-title">
     <h2 id="cards-title" class="sr-only">Traductions</h2>
-    <p id="empty" class="empty">Aucune traduction pour l'instant.</p>
     <div id="cards" class="cards"></div>
   </section>
 </main>
@@ -615,7 +632,6 @@ footer.colophon {
   'use strict';
 
   var KEY = 'vox.state.v1';
-  var MAX_CARDS = 20;
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var synth = window.speechSynthesis || null;
   var RTL = { ar: true, he: true, fa: true, ur: true };
@@ -698,7 +714,6 @@ footer.colophon {
   var clearBtn = document.getElementById('clearBtn');
   var flagGrid = document.getElementById('flagGrid');
   var cardsEl = document.getElementById('cards');
-  var emptyEl = document.getElementById('empty');
   var toastEl = document.getElementById('toast');
   var announceEl = document.getElementById('announce');
   var sourceSel = document.getElementById('sourceLang');
@@ -774,7 +789,7 @@ footer.colophon {
     if (Array.isArray(data.cards)) {
       cards = data.cards.filter(function (c) {
         return c && typeof c.code === 'string' && byCode(c.code);
-      }).slice(0, MAX_CARDS).map(function (c) {
+      }).map(function (c) {
         if (c.state === 'loading') {
           c.state = 'error';
           c.error = 'Traduction interrompue. Touchez Reessayer.';
@@ -782,6 +797,17 @@ footer.colophon {
         return c;
       });
     }
+    // Retire uniquement l'exemple que les anciennes versions sauvegardaient.
+    var demoSource = "Bonjour, je dicte mon texte ici. Ensuite je touche un drapeau pour voir la traduction, et Lire pour l'ecouter.";
+    var demoTranslation = 'Hallo, ich diktiere meinen Text hier. Danach tippe ich auf eine Flagge, um die Ubersetzung zu sehen, und auf Vorlesen, um sie zu horen.';
+    var hadDemoText = ta.value === demoSource;
+    var cardCount = cards.length;
+    if (hadDemoText) ta.value = '';
+    cards = cards.filter(function (card) {
+      return !(card.code === 'de' && card.source === demoSource && card.text === demoTranslation);
+    });
+    cards = cards.slice(0, 1);
+    if (hadDemoText || cards.length !== cardCount) save();
     return true;
   }
 
@@ -793,7 +819,7 @@ footer.colophon {
     micBtn.setAttribute('aria-label', on ? 'Arreter la dictee' : 'Demarrer la dictee');
     micCaption.textContent = on
       ? 'Ecoute en cours. Parlez, puis touchez pour arreter.'
-      : "Touchez le micro et parlez : le texte s'ecrit ici.";
+      : '';
   }
 
   function updateCounter() {
@@ -1010,37 +1036,26 @@ footer.colophon {
       return;
     }
     var from = sourceSel.value.split('-')[0];
-    var existing = null;
-    for (var i = 0; i < cards.length; i++) {
-      if (cards[i].code === lang.code && cards[i].source === text) existing = cards[i];
-    }
-
-    var card;
-    if (existing) {
-      card = existing;
-      card.state = 'loading';
-      card.error = '';
-      cards = [card].concat(cards.filter(function (c) { return c !== card; }));
-    } else {
-      card = {
-        id: uid(),
-        code: lang.code,
-        name: lang.name,
-        locale: lang.locale,
-        source: text,
-        text: '',
-        state: 'loading',
-        error: '',
-        at: Date.now()
-      };
-      cards = [card].concat(cards).slice(0, MAX_CARDS);
-    }
+    var card = {
+      id: uid(),
+      code: lang.code,
+      name: lang.name,
+      locale: lang.locale,
+      source: text,
+      text: '',
+      state: 'loading',
+      error: '',
+      at: Date.now()
+    };
+    if (speakingId) stopSpeaking();
+    cards = [card];
 
     render();
     save();
     announce('Traduction en ' + lang.name + ' en cours.');
 
     translateAll(text, from, lang.code).then(function (out) {
+      if (cards[0] !== card) return;
       card.text = out;
       card.state = 'ready';
       card.error = '';
@@ -1049,6 +1064,7 @@ footer.colophon {
       focusCard(card.id);
       announce('Traduction en ' + lang.name + ' prete.');
     }).catch(function (err) {
+      if (cards[0] !== card) return;
       card.state = 'error';
       card.error = (err && err.message) || 'Traduction impossible.';
       refreshCard(card);
@@ -1063,12 +1079,14 @@ footer.colophon {
     card.error = '';
     render();
     translateAll(card.source, from, card.code).then(function (out) {
+      if (cards[0] !== card) return;
       card.text = out;
       card.state = 'ready';
       card.error = '';
       refreshCard(card);
       save();
     }).catch(function (err) {
+      if (cards[0] !== card) return;
       card.state = 'error';
       card.error = (err && err.message) || 'Traduction impossible.';
       refreshCard(card);
@@ -1204,7 +1222,6 @@ footer.colophon {
 
   function render() {
     cardsEl.textContent = '';
-    emptyEl.hidden = cards.length > 0;
     cards.forEach(function (card) {
       cardsEl.appendChild(buildCard(card));
     });
@@ -1221,7 +1238,6 @@ footer.colophon {
     else cardsEl.insertBefore(fresh, cardsEl.firstChild);
     var field = fresh.querySelector('.card-text');
     if (field) autoGrow(field);
-    emptyEl.hidden = cards.length > 0;
     paintSpeaking();
   }
 
@@ -1431,22 +1447,7 @@ footer.colophon {
   });
   sourceSel.value = 'fr-FR';
 
-  var restored = load();
-  if (!restored || (!ta.value && cards.length === 0)) {
-    ta.value = "Bonjour, je dicte mon texte ici. Ensuite je touche un drapeau pour voir la traduction, et Lire pour l'ecouter.";
-    cards = [{
-      id: uid(),
-      code: 'de',
-      name: 'Allemand',
-      locale: 'de-DE',
-      source: ta.value,
-      text: 'Hallo, ich diktiere meinen Text hier. Danach tippe ich auf eine Flagge, um die Ubersetzung zu sehen, und auf Vorlesen, um sie zu horen.',
-      state: 'ready',
-      error: '',
-      at: Date.now()
-    }];
-    save();
-  }
+  load();
 
   updateCounter();
   render();
