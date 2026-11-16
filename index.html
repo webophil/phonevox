@@ -288,12 +288,24 @@ textarea {
 }
 
 #transcript {
+  height: 9.25em;
   min-height: 128px;
   caret-color: var(--accent);
   resize: vertical;
   background: var(--surface-2);
 }
-#transcript::placeholder { color: var(--ink-2); opacity: 1; }
+#transcript:placeholder-shown:not(:focus) {
+  padding-top: 3.1em;
+}
+#transcript::placeholder {
+  color: var(--ink-2);
+  opacity: 1;
+  text-align: center;
+}
+#transcript:focus::placeholder,
+.panel:has(.mic.is-live) #transcript::placeholder { opacity: 0; }
+.panel:has(.mic.is-live) #transcript { padding-top: 13px; }
+.mic-caption:empty { display: none; }
 ::selection { background: var(--ink); color: var(--paper); }
 
 .meta-row {
@@ -388,18 +400,6 @@ textarea {
   flex-direction: column;
   gap: 14px;
 }
-
-.empty {
-  padding: 26px 14px;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  font-size: .86rem;
-  color: var(--ink-2);
-  text-align: center;
-  max-width: 58ch;
-  margin-inline: auto;
-}
-.empty[hidden] { display: none; }
 
 .card {
   min-width: 0;
@@ -596,13 +596,13 @@ footer.colophon {
           <path d="M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
-      <p id="micCaption" class="mic-caption">Touchez le micro et parlez : le texte s'ecrit ici.</p>
+      <p id="micCaption" class="mic-caption"></p>
     </div>
 
     <p id="interim" class="interim" aria-live="polite" aria-atomic="true"></p>
 
     <label class="sr-only" for="transcript">Texte dicte</label>
-    <textarea id="transcript" rows="6" spellcheck="true" placeholder="Votre texte apparait ici. Vous pouvez le corriger avant de traduire."></textarea>
+    <textarea id="transcript" rows="6" spellcheck="true" placeholder="touchez le micro et parlez&#10;le texte s'écrit ici"></textarea>
 
     <div class="meta-row">
       <span id="counter" class="counter">0 caractere</span>
@@ -618,7 +618,6 @@ footer.colophon {
 
   <section class="section" aria-labelledby="cards-title">
     <h2 id="cards-title" class="sr-only">Traductions</h2>
-    <p id="empty" class="empty">Aucune traduction pour l'instant.</p>
     <div id="cards" class="cards"></div>
   </section>
 </main>
@@ -716,7 +715,6 @@ footer.colophon {
   var clearBtn = document.getElementById('clearBtn');
   var flagGrid = document.getElementById('flagGrid');
   var cardsEl = document.getElementById('cards');
-  var emptyEl = document.getElementById('empty');
   var toastEl = document.getElementById('toast');
   var announceEl = document.getElementById('announce');
   var sourceSel = document.getElementById('sourceLang');
@@ -800,6 +798,16 @@ footer.colophon {
         return c;
       });
     }
+    // Retire uniquement l'exemple que les anciennes versions sauvegardaient.
+    var demoSource = "Bonjour, je dicte mon texte ici. Ensuite je touche un drapeau pour voir la traduction, et Lire pour l'ecouter.";
+    var demoTranslation = 'Hallo, ich diktiere meinen Text hier. Danach tippe ich auf eine Flagge, um die Ubersetzung zu sehen, und auf Vorlesen, um sie zu horen.';
+    var hadDemoText = ta.value === demoSource;
+    var cardCount = cards.length;
+    if (hadDemoText) ta.value = '';
+    cards = cards.filter(function (card) {
+      return !(card.code === 'de' && card.source === demoSource && card.text === demoTranslation);
+    });
+    if (hadDemoText || cards.length !== cardCount) save();
     return true;
   }
 
@@ -811,7 +819,7 @@ footer.colophon {
     micBtn.setAttribute('aria-label', on ? 'Arreter la dictee' : 'Demarrer la dictee');
     micCaption.textContent = on
       ? 'Ecoute en cours. Parlez, puis touchez pour arreter.'
-      : "Touchez le micro et parlez : le texte s'ecrit ici.";
+      : '';
   }
 
   function updateCounter() {
@@ -1222,7 +1230,6 @@ footer.colophon {
 
   function render() {
     cardsEl.textContent = '';
-    emptyEl.hidden = cards.length > 0;
     cards.forEach(function (card) {
       cardsEl.appendChild(buildCard(card));
     });
@@ -1239,7 +1246,6 @@ footer.colophon {
     else cardsEl.insertBefore(fresh, cardsEl.firstChild);
     var field = fresh.querySelector('.card-text');
     if (field) autoGrow(field);
-    emptyEl.hidden = cards.length > 0;
     paintSpeaking();
   }
 
@@ -1449,22 +1455,7 @@ footer.colophon {
   });
   sourceSel.value = 'fr-FR';
 
-  var restored = load();
-  if (!restored || (!ta.value && cards.length === 0)) {
-    ta.value = "Bonjour, je dicte mon texte ici. Ensuite je touche un drapeau pour voir la traduction, et Lire pour l'ecouter.";
-    cards = [{
-      id: uid(),
-      code: 'de',
-      name: 'Allemand',
-      locale: 'de-DE',
-      source: ta.value,
-      text: 'Hallo, ich diktiere meinen Text hier. Danach tippe ich auf eine Flagge, um die Ubersetzung zu sehen, und auf Vorlesen, um sie zu horen.',
-      state: 'ready',
-      error: '',
-      at: Date.now()
-    }];
-    save();
-  }
+  load();
 
   updateCounter();
   render();
